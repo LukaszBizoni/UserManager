@@ -1,0 +1,27 @@
+{% extends "usuarios/base.html" %}
+
+{% block title %}Excluir usuário | Cadastre-me!{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <section class="card app-card danger-card" aria-labelledby="delete-title">
+        <div class="card-body p-4 p-md-5 text-center">
+          <div class="danger-icon mx-auto" aria-hidden="true">!</div>
+          <h1 class="h3 mt-4" id="delete-title">Confirmar exclusão</h1>
+          <p class="text-body-secondary mb-1">Você está prestes a excluir:</p>
+          <p class="fs-5 fw-semibold mb-2">{{ usuario.nome }}</p>
+          <p class="text-body-secondary mb-4">Essa ação não poderá ser desfeita.</p>
+
+          <form action="{% url 'excluir_usuario' usuario.id_usuario %}" method="post">
+            {% csrf_token %}
+            <div class="d-flex flex-column-reverse flex-sm-row justify-content-center gap-2">
+              <a class="btn btn-outline-secondary" href="{% url 'listagem_usuarios' %}">Cancelar</a>
+              <button class="btn btn-danger px-4" type="submit">Excluir usuário</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}

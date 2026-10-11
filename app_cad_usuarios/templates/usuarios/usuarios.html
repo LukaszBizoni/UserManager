@@ -1,0 +1,58 @@
+{% extends "usuarios/base.html" %}
+
+{% block title %}Usuários cadastrados | Cadastre-me!{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-3 mb-4">
+    <header class="page-heading">
+      <span class="eyebrow">Visão geral</span>
+      <h1 class="display-6 fw-semibold mt-2 mb-1">Usuários cadastrados</h1>
+      <p class="text-body-secondary mb-0">Consulte e gerencie os usuários do sistema.</p>
+    </header>
+    <a class="btn btn-primary align-self-md-center" href="{% url 'home' %}">Novo usuário</a>
+  </div>
+
+  <section class="card app-card overflow-hidden" aria-label="Lista de usuários">
+    <div class="card-header d-flex align-items-center justify-content-between px-4 py-3">
+      <h2 class="h6 mb-0">Registros</h2>
+      <span class="badge text-bg-secondary rounded-pill">{{ usuarios|length }}</span>
+    </div>
+
+    {% if usuarios %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Nome</th>
+              <th scope="col">Idade</th>
+              <th class="text-end" scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for usuario in usuarios %}
+              <tr>
+                <td class="text-body-secondary">#{{ usuario.id_usuario }}</td>
+                <td class="fw-medium">{{ usuario.nome }}</td>
+                <td>{{ usuario.idade }} anos</td>
+                <td>
+                  <div class="d-flex flex-wrap justify-content-end gap-2 action-buttons">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'editar_usuario' usuario.id_usuario %}" aria-label="Editar {{ usuario.nome }}">Editar</a>
+                    <a class="btn btn-sm btn-outline-danger" href="{% url 'excluir_usuario' usuario.id_usuario %}" aria-label="Excluir {{ usuario.nome }}">Excluir</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state text-center px-4 py-5">
+        <div class="empty-state-icon" aria-hidden="true">＋</div>
+        <h2 class="h5 mt-3">Nenhum usuário cadastrado</h2>
+        <p class="text-body-secondary mb-4">Cadastre o primeiro usuário para começar.</p>
+        <a class="btn btn-primary" href="{% url 'home' %}">Cadastrar usuário</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

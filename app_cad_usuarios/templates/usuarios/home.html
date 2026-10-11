@@ -1,0 +1,30 @@
+{% extends "usuarios/base.html" %}
+
+{% block title %}Novo cadastro | Cadastre-me!{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-7">
+      <header class="page-heading text-center mb-4">
+        <span class="eyebrow">Gestão de usuários</span>
+        <h1 class="display-6 fw-semibold mt-2">Cadastro de usuários</h1>
+        <p class="text-body-secondary mb-0">Preencha os dados abaixo para adicionar um novo usuário.</p>
+      </header>
+
+      <section class="card app-card" aria-labelledby="form-title">
+        <div class="card-body p-4 p-md-5">
+          <h2 class="h5 mb-4" id="form-title">Dados do usuário</h2>
+          <form action="{% url 'listagem_usuarios' %}" method="post">
+            {% csrf_token %}
+            {% include "usuarios/_usuario_form_fields.html" %}
+
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-end">
+              <a class="btn btn-outline-secondary" href="{% url 'listagem_usuarios' %}">Ver usuários</a>
+              <button class="btn btn-primary px-4" type="submit">Cadastrar usuário</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}
