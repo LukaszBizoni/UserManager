@@ -1,8 +1,8 @@
-# ProjCADUsuarios
+# UserManager
 
 Current version: **v1.1**
 
-ProjCADUsuarios is a simple Django application for managing user records. It was built as a personal learning project and provides a complete CRUD flow for names and ages.
+UserManager is a simple Django application for managing user records. It was built as a personal learning project and provides a complete CRUD flow for names and ages.
 
 ## Technologies
 
