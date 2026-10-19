@@ -16,6 +16,11 @@ staticfiles/
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
 
 # Editors and operating systems
 .vscode/

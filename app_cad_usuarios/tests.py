@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
 from django.contrib.staticfiles import finders
 from django.test import Client, TestCase
@@ -10,6 +12,12 @@ from .models import Usuario
 
 class UsuarioCrudTests(TestCase):
     def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="admin_teste",
+            password="senha-forte-de-teste",
+            is_superuser=True,
+        )
+        self.client.force_login(self.user)
         self.usuario = Usuario.objects.create(nome="Ana", idade=29)
 
     def test_home_exibe_formulario_de_cadastro(self):
@@ -105,6 +113,7 @@ class UsuarioCrudTests(TestCase):
 
     def test_operacoes_de_escrita_exigem_csrf(self):
         client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
 
         create_response = client.post(
             reverse("listagem_usuarios"),
@@ -138,6 +147,14 @@ class UsuarioCrudTests(TestCase):
 
 
 class InterfaceTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="interface_teste",
+            password="senha-forte-de-teste",
+            is_superuser=True,
+        )
+        self.client.force_login(self.user)
+
     def test_template_base_configura_tema_e_arquivos_estaticos(self):
         response = self.client.get(reverse("home"))
 
@@ -178,3 +195,122 @@ class InterfaceTests(TestCase):
         self.assertIn("--app-background: #f7f9f5", stylesheet)
         self.assertIn("--app-accent: #3f6b3a", stylesheet)
         self.assertIn("--bs-btn-bg: var(--app-accent)", stylesheet)
+
+    def test_respostas_incluem_content_security_policy(self):
+        response = self.client.get(reverse("home"))
+
+        policy = response.headers["Content-Security-Policy"]
+        self.assertIn("default-src 'self'", policy)
+        self.assertIn("object-src 'none'", policy)
+        self.assertIn("frame-ancestors 'none'", policy)
+
+
+class ControleDeAcessoTests(TestCase):
+    def setUp(self):
+        self.usuario = Usuario.objects.create(nome="Ana", idade=29)
+        self.user = get_user_model().objects.create_user(
+            username="usuario_limitado",
+            password="senha-forte-de-teste",
+        )
+
+    def test_visitante_e_redirecionado_para_login(self):
+        urls = (
+            reverse("home"),
+            reverse("listagem_usuarios"),
+            reverse("editar_usuario", args=[self.usuario.pk]),
+            reverse("excluir_usuario", args=[self.usuario.pk]),
+        )
+
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertRedirects(
+                    response,
+                    f"{reverse('login')}?next={url}",
+                )
+
+    def test_usuario_sem_permissoes_recebe_403(self):
+        self.client.force_login(self.user)
+
+        urls = (
+            reverse("home"),
+            reverse("listagem_usuarios"),
+            reverse("editar_usuario", args=[self.usuario.pk]),
+            reverse("excluir_usuario", args=[self.usuario.pk]),
+        )
+
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+
+        create_response = self.client.post(
+            reverse("listagem_usuarios"),
+            {"nome": "Sem permissão", "idade": 20},
+        )
+        self.assertEqual(create_response.status_code, 403)
+        self.assertFalse(Usuario.objects.filter(nome="Sem permissão").exists())
+
+    def test_visitante_nao_consegue_modificar_registros(self):
+        create_response = self.client.post(
+            reverse("listagem_usuarios"),
+            {"nome": "Intruso", "idade": 20},
+        )
+        edit_response = self.client.post(
+            reverse("editar_usuario", args=[self.usuario.pk]),
+            {"nome": "Alterada", "idade": 30},
+        )
+        delete_response = self.client.post(
+            reverse("excluir_usuario", args=[self.usuario.pk])
+        )
+
+        self.assertEqual(create_response.status_code, 302)
+        self.assertEqual(edit_response.status_code, 302)
+        self.assertEqual(delete_response.status_code, 302)
+        self.assertFalse(Usuario.objects.filter(nome="Intruso").exists())
+        self.usuario.refresh_from_db()
+        self.assertEqual(self.usuario.nome, "Ana")
+
+    def test_permissao_de_visualizacao_nao_autoriza_alteracoes(self):
+        view_permission = Permission.objects.get(
+            content_type__app_label="app_cad_usuarios",
+            codename="view_usuario",
+        )
+        self.user.user_permissions.add(view_permission)
+        self.client.force_login(self.user)
+
+        list_response = self.client.get(reverse("listagem_usuarios"))
+        edit_response = self.client.post(
+            reverse("editar_usuario", args=[self.usuario.pk]),
+            {"nome": "Alterada", "idade": 30},
+        )
+        delete_response = self.client.post(
+            reverse("excluir_usuario", args=[self.usuario.pk])
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertNotContains(list_response, ">Editar<")
+        self.assertNotContains(list_response, ">Excluir<")
+        self.assertEqual(edit_response.status_code, 403)
+        self.assertEqual(delete_response.status_code, 403)
+        self.usuario.refresh_from_db()
+        self.assertEqual(self.usuario.nome, "Ana")
+
+    def test_login_e_logout(self):
+        permissions = Permission.objects.filter(
+            content_type__app_label="app_cad_usuarios",
+            content_type__model="usuario",
+        )
+        self.user.user_permissions.set(permissions)
+
+        login_response = self.client.post(
+            reverse("login"),
+            {"username": self.user.username, "password": "senha-forte-de-teste"},
+        )
+
+        self.assertRedirects(login_response, reverse("listagem_usuarios"))
+        self.assertIn("_auth_user_id", self.client.session)
+
+        logout_response = self.client.post(reverse("logout"))
+
+        self.assertRedirects(logout_response, reverse("login"))
+        self.assertNotIn("_auth_user_id", self.client.session)

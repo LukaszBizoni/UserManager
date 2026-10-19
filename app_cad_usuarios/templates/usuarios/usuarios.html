@@ -9,7 +9,9 @@
       <h1 class="display-6 fw-semibold mt-2 mb-1">Usuários cadastrados</h1>
       <p class="text-body-secondary mb-0">Consulte e gerencie os usuários do sistema.</p>
     </header>
-    <a class="btn btn-primary align-self-md-center" href="{% url 'home' %}">Novo usuário</a>
+    {% if perms.app_cad_usuarios.add_usuario %}
+      <a class="btn btn-primary align-self-md-center" href="{% url 'home' %}">Novo usuário</a>
+    {% endif %}
   </div>
 
   <section class="card app-card overflow-hidden" aria-label="Lista de usuários">
@@ -26,7 +28,9 @@
               <th scope="col">ID</th>
               <th scope="col">Nome</th>
               <th scope="col">Idade</th>
-              <th class="text-end" scope="col">Ações</th>
+              {% if perms.app_cad_usuarios.change_usuario or perms.app_cad_usuarios.delete_usuario %}
+                <th class="text-end" scope="col">Ações</th>
+              {% endif %}
             </tr>
           </thead>
           <tbody>
@@ -35,12 +39,18 @@
                 <td class="text-body-secondary">#{{ usuario.id_usuario }}</td>
                 <td class="fw-medium">{{ usuario.nome }}</td>
                 <td>{{ usuario.idade }} anos</td>
+                {% if perms.app_cad_usuarios.change_usuario or perms.app_cad_usuarios.delete_usuario %}
                 <td>
                   <div class="d-flex flex-wrap justify-content-end gap-2 action-buttons">
+                    {% if perms.app_cad_usuarios.change_usuario %}
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'editar_usuario' usuario.id_usuario %}" aria-label="Editar {{ usuario.nome }}">Editar</a>
+                    {% endif %}
+                    {% if perms.app_cad_usuarios.delete_usuario %}
                     <a class="btn btn-sm btn-outline-danger" href="{% url 'excluir_usuario' usuario.id_usuario %}" aria-label="Excluir {{ usuario.nome }}">Excluir</a>
+                    {% endif %}
                   </div>
                 </td>
+                {% endif %}
               </tr>
             {% endfor %}
           </tbody>
@@ -51,7 +61,9 @@
         <div class="empty-state-icon" aria-hidden="true">＋</div>
         <h2 class="h5 mt-3">Nenhum usuário cadastrado</h2>
         <p class="text-body-secondary mb-4">Cadastre o primeiro usuário para começar.</p>
-        <a class="btn btn-primary" href="{% url 'home' %}">Cadastrar usuário</a>
+        {% if perms.app_cad_usuarios.add_usuario %}
+          <a class="btn btn-primary" href="{% url 'home' %}">Cadastrar usuário</a>
+        {% endif %}
       </div>
     {% endif %}
   </section>
